@@ -76,13 +76,13 @@ interface SelectedData {
   total: number;
 }
 
-function Reservations() {
+export const Reservations = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   // const id = localStorage.getItem('id') ?? '';
 
   const { data: subscribers, loading, error, refetch } = useGetawaySubscribers(id || '');
-  console.log(subscribers);
+
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const [selectedData, setSelectedData] = useState<SelectedData | null>(null);
@@ -117,7 +117,7 @@ function Reservations() {
             sx={{ alignItems:'center' }}>
               <Typography sx={{ mt: 1, mb: 3, color: 'text.secondary' }}>
                 {subscribers?.length > 0
-                  ? t('reservations.subscribersCount', { count: subscribers.length })
+                  ? t('reservations.subscribersCount', { count: subscribers.length || 0 })
                   : t('reservations.noSubscribers')
                 }
               </Typography>
@@ -147,14 +147,12 @@ function Reservations() {
                 <Typography variant="body2" color="text.secondary">{t('reservations.fetchingBookings')}</Typography>
               </Box>
             ):(
-              <ul>
-                {subscribers?.map((subscriber: any) => (
-                  <li key={subscriber.id}>{subscriber.name} - {subscriber.email}</li>
-                ))}
-              </ul>
-            )}
-
-            <TableContainer component={Paper} sx={{ overflowX: 'auto', width: '100%' }}>
+              // <ul>
+              //   {subscribers?.map((subscriber: any) => (
+              //     <li key={subscriber.id}>{subscriber.name} - {subscriber.email}</li>
+              //   ))}
+              // </ul>
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', width: '100%' }}>
               <Table sx={{ minWidth: 650 }} aria-label="customized table">
                 <TableHead>
                   <TableRow>
@@ -167,17 +165,17 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                  <StyledTableRow key={row.playerName}>
-                    <StyledTableCell align="left">{row.id}</StyledTableCell>
+                  {subscribers.map((row:any, index: number) => (
+                  <StyledTableRow key={index}>
+                    <StyledTableCell align="left">{index+1}</StyledTableCell>
                     <StyledTableCell component="th" scope="row">
-                      {row.playerName}
+                      {row.reservation.user.name}
                     </StyledTableCell>
-                    <StyledTableCell align="left">{row.paymentState}</StyledTableCell>
-                    <StyledTableCell align="right">{row.price}</StyledTableCell>
+                    <StyledTableCell align="left">{row.paymentStatus}</StyledTableCell>
+                    <StyledTableCell align="right">{row.reservation.paymentDetails.Total}</StyledTableCell>
                     <StyledTableCell align="left">
                       <Link target="_blank" href={`https://${row.whatsappLink}`}>
-                        {row.whatsappLink}
+                        {row.reservation.user.cellphone}
                       </Link>
                     </StyledTableCell>
                     <StyledTableCell align="center">
@@ -191,6 +189,9 @@ function Reservations() {
                 </TableBody>
               </Table>
             </TableContainer>
+            )}
+
+            
           </Box>
         </Grid>     
       </Grid>     
@@ -248,4 +249,4 @@ function Reservations() {
     </>
   );
 };
-export default Reservations;
+// export default Reservations;

@@ -19,7 +19,7 @@ import Login from './views/Login';
 import Mygetaways from './views/Mygetaways';
 import Getaways from './views/Getaways';
 import BookGetaway2 from './views/BookGetaway2';
-import Reservations from './views/Reservations';
+import {Reservations} from './views/Reservations';
 import Payment from './views/Payment';
 import Paid from './views/Paid';
 import DataView from './views/DataView';
