@@ -39,23 +39,68 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  id: string,
-  playerName: string,
-  city: string,
-  paymentState: string,
-  price: number,
-  whatsappLink: string,
-) {
-  return { id, playerName, city, paymentState, price, whatsappLink };
+// function createData(
+//   id: string,
+//   playerName: string,
+//   city: string,
+//   paymentState: string,
+//   price: number,
+//   whatsappLink: string,
+// ) {
+//   return { id, playerName, city, paymentState, price, whatsappLink };
+// }
+
+// const rows = [
+//   createData('1', 'Joe Doe', 'Miami', 'Pending', 240, 'wa.me/59178326628'),
+//   createData('2', 'Ann Taylor', 'Las Palmas', 'Approved', 370, 'wa.me/1+number'),
+//   createData('3', 'Alan Smith', 'Miami', 'Rejected', 240.5, 'wa.me/+number'),
+// ];
+export interface UserReservation {
+  cellphone: string;
+  email: string;
+  id: string;
+  name: string;
 }
 
-const rows = [
-  createData('1', 'Joe Doe', 'Miami', 'Pending', 240, 'wa.me/59178326628'),
-  createData('2', 'Ann Taylor', 'Las Palmas', 'Approved', 370, 'wa.me/1+number'),
-  createData('3', 'Alan Smith', 'Miami', 'Rejected', 240.5, 'wa.me/+number'),
-];
+export interface LodgingOptionReservation {
+  occupancy: null | string; // Permitimos null o string según tu JSON
+  option: string;
+  price: number;            // Nota: Aquí el precio viene como número (1200)
+}
 
+export interface PaymentDetailsReservation {
+  Subtotal: string;
+  Taxes: string;
+  Total: string;
+}
+
+// Puedes tipar esto de manera más específica si en un futuro agregas AddOns
+export interface OptionalAddOnReservation {
+  [key: string]: any;
+}
+
+export interface Reservation {
+  getawayId: string;
+  lodgingOption: LodgingOptionReservation;
+  optionalAddOns: OptionalAddOnReservation[];
+  paymentDetails: PaymentDetailsReservation;
+  user: UserReservation;
+}
+
+// Interfaz principal para el objeto completo (Orden de suscripción)
+export interface GetawayOrder {
+  id: string;
+  orderId: string;
+  createdAt: string;       // Formato ISO Fecha: "2026-07-23T..."
+  paymentIntentId: string; // "pi_3TwVNKEeR4qLCAZm1..."
+  invoiceNumber: string;   // "INV-202607-0003"
+  paidAt: string;          // Formato ISO Fecha
+  paymentStatus: "succeeded" | "failed" | "pending"; // Tipado estricto para estados
+  status: "paid" | "unpaid" | string;
+  reservation: Reservation;
+}
+
+// 
 interface RowData {
   id: string;
   playerName: string;
@@ -65,37 +110,60 @@ interface RowData {
   whatsappLink: string;
 }
 
-interface SelectedData {
-  lodgingOption: string;
-  amenities: {
-    specialDinner: boolean;
-    meetGreet: boolean;
-    tennisClass: boolean;
-  };
-  taxes: number;
-  total: number;
+export interface LodgingOption {
+  option: string;
+  price: string;
+}
+
+export interface OptionalAddOn {
+  [key: string]: any; 
+}
+export interface PaymentDetails {
+  Subtotal: string;
+  Taxes: string;
+  Total: string;
+}
+export interface UserDetails {
+  cellphone: string;
+  email: string;
+  id: string;
+  name: string;
+}
+
+// Interfaz principal para tu estado 'selectedData'
+export interface SelectedData {
+  getawayAddress: string;
+  getawayDates: string;
+  getawayId: string;
+  getawayTitle: string;
+  lodgingOption: LodgingOption;
+  optionalAddOns: OptionalAddOn[];
+  orderId: string;
+  paymentDetails: PaymentDetails;
+  user: UserDetails;
 }
 
 export const Reservations = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  // const id = localStorage.getItem('id') ?? '';
 
   const { data: subscribers, loading, error, refetch } = useGetawaySubscribers(id || '');
 
   const [open, setOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
+  const [selectedRow, setSelectedRow] = useState<GetawayOrder | null>(null);
   const [selectedData, setSelectedData] = useState<SelectedData | null>(null);
 
   useEffect(() => {
     const data = localStorage.getItem('selectedData');
-    console.log("localstorage data ", data)
     if (data) {
-      setSelectedData(JSON.parse(data));
+      const parsed = JSON.parse(data)
+      // console.log("Estructura real del JSON:", parsed)
+      setSelectedData(parsed);
     }
   }, []);
 
   const handleOpenDialog = (row: RowData) => {
+    console.log(row)
     setSelectedRow(row);
     setOpen(true);
   };
@@ -215,26 +283,26 @@ export const Reservations = () => {
         <DialogContent>
           {selectedRow && (
             <>
-              <Typography variant="body1">{t('reservations.playerName')}: {selectedRow.playerName}</Typography>
-              <Typography variant="body1">{t('reservations.city')}: {selectedRow.city}</Typography>
-              <Typography variant="body1">{t('reservations.paymentState')}: {selectedRow.paymentState}</Typography>
-              <Typography variant="body1">{t('reservations.priceLabel')}: ${selectedRow.price}</Typography>
+              <Typography variant="body1">{t('reservations.playerName')}: {selectedRow?.reservation.user.name}</Typography>
+              {/* <Typography variant="body1">{t('reservations.city')}: {selectedRow.city}</Typography> */}
+              <Typography variant="body1">{t('reservations.paymentState')}: {selectedRow.paymentStatus}</Typography>
+              <Typography variant="body1">{t('reservations.priceLabel')}: ${selectedRow?.reservation.paymentDetails.Total || 0}</Typography>
 
               {selectedData ? (
                 <>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="subtitle1">{t('reservations.bookingDetails')}</Typography>
-                  <Typography variant="body1">{t('reservations.lodgingOption')}: {selectedData.lodgingOption}</Typography>
+                  <Typography variant="body1">{t('reservations.lodgingOption')}: {selectedData.lodgingOption.option}</Typography>
                   <Typography variant="body1">
                     {t('reservations.addOns')}:
-                    {selectedData.amenities.specialDinner && ` ${t('reservations.specialDinner')},`}
+                    {/* {selectedData.amenities.specialDinner && ` ${t('reservations.specialDinner')},`}
                     {selectedData.amenities.meetGreet && ` ${t('reservations.meetGreet')},`}
-                    {selectedData.amenities.tennisClass && ` ${t('reservations.tennisClass')}`}
+                    {selectedData.amenities.tennisClass && ` ${t('reservations.tennisClass')}`} */}
                   </Typography>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="subtitle1">{t('reservations.paymentDetails')}</Typography>
-                  <Typography variant="body1">{t('reservations.taxes')}: ${selectedData.taxes.toFixed(2)}</Typography>
-                  <Typography variant="body1">{t('reservations.total')}: ${selectedData.total.toFixed(2)}</Typography>
+                  <Typography variant="body1">{t('reservations.taxes')}: ${selectedData.paymentDetails.Taxes}</Typography>
+                  <Typography variant="body1">{t('reservations.total')}: ${selectedData.paymentDetails.Total}</Typography>
                 </>
               ) : (
                 <>
