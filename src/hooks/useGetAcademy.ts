@@ -1,7 +1,6 @@
 import * as React from 'react';
 import axios from 'axios';
-import { auth } from '../lib/firebase';
-import { API_ENDPOINTS } from '../constants/routes';
+import { api } from '../api/api';
 
 export interface AcademyParams {
   startDate?: string;
@@ -33,24 +32,16 @@ export const useGetAcademy = () => {
     setError(null);
 
     try {
-      const user = auth.currentUser;
-      const headers: Record<string, string> = {};
-
-      if (user) {
-        const token = await user.getIdToken(true);
-        headers.Authorization = `Bearer ${token}`;
-      } else { throw new Error('Usuario no autenticado'); }
-
-      // 3. Petición GET usando axios directamente
-      const response = await axios.get<{ ok: boolean; academy: AcademyClass[] }>
-      (API_ENDPOINTS.ACADEMY, {
-        headers,
+      const response = await api.get<{ ok: boolean; academy: AcademyClass[] }>(
+        '/academy/getaways',
+        {
         params: {
           ...(params.startDate && { startDate: params.startDate }),
           ...(params.endDate && { endDate: params.endDate }),
           ...(params.sport && { sport: params.sport }),
         },
-      });
+        }
+      );
 
       setAcademyData(response.data.academy ?? []);
       // console.log('Academy response:', response.data)

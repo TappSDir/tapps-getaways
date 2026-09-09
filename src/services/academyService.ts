@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/api';
 
 // Interfaces para tipado estricto
 export interface GetAcademyParams {
@@ -22,15 +22,13 @@ export interface AcademyClass {
   [key: string]: any; // Para propiedades dinámicas adicionales
 }
 // Configura la URL base de tu backend (puedes sacarla de process.env.REACT_APP_API_URL o import.meta.env)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://tu-api.com/api';
-
 /**
  * Servicio frontend para consultar las clases de la academia.
  * Consume el GET endpoint enviando fechaInicio, fechaFin y deporte opcionalmente.
  */
 export const getAcademyService = async (params?: GetAcademyParams): Promise<AcademyClass[]> => {
   try {
-    const response = await axios.get<AcademyClass[]>(`${API_BASE_URL}/academy`, {
+    const response = await api.get<{ ok: boolean; academy: AcademyClass[] }>('/academy/getaways', {
       params: {
         ...(params?.fechaInicio && { fechaInicio: params.fechaInicio }),
         ...(params?.fechaFin && { fechaFin: params.fechaFin }),
@@ -38,9 +36,9 @@ export const getAcademyService = async (params?: GetAcademyParams): Promise<Acad
       },
     });
 
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al obtener clases de la academia:', error?.response?.data || error.message);
+    return response.data.academy ?? [];
+  } catch (error: unknown) {
+    console.error('Error al obtener clases de la academia:', error);
     throw error;
   }
 };

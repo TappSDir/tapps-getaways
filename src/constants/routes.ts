@@ -38,5 +38,5 @@ export const couponNewPath = (getawayId?: string) =>
   getawayId ? `${ROUTES.COUPON_NEW}?getawayId=${getawayId}` : ROUTES.COUPON_NEW;
 
 export const API_ENDPOINTS = {
-  ACADEMY: '/api/academy/getaways',
+  ACADEMY: '/academy/getaways',
 } as const;
