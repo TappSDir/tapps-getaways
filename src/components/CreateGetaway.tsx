@@ -18,6 +18,8 @@ import { AddressAutocompleteField } from '../components/AddressAutocompleteField
 import { GalleryPhotoItem } from '../components/GalleryPhotoItem';
 import { ScheduleForm } from '../components/ScheduleForm';
 import AcademySchedule from '../components/AcademySchedule';
+// import AcademySchedule1 from '../components/AcademySchedule1';
+
 import LaddersSchedule from '../components/LaddersSchedule';
 import TournamentsSchedule from '../components/TournamentsSchedule';
 // import { Tournaments } from './Tournaments';
@@ -136,7 +138,15 @@ export default function CreateGetaway() {
       }));
 
     setScheduleError(null);
-    await submitGetaway(data, scheduleRows, cleanedAddOns, validPhotos, validCaptions, selectedTournamentIds);
+    await submitGetaway(
+      data,
+      scheduleRows,
+      cleanedAddOns,
+      validPhotos,
+      validCaptions,
+      selectedTournamentIds,
+      selectedAcademyIds
+    );
   };
 
   React.useEffect(() => {
@@ -550,6 +560,7 @@ export default function CreateGetaway() {
                 <ScheduleForm rows={scheduleRows} setRows={setScheduleRows} />
               </Box>
 
+              {/* <AcademySchedule1/> */}
               <AcademySchedule
                 schedules={academyData}
                 loading={loadingAcademy}
@@ -568,7 +579,7 @@ export default function CreateGetaway() {
                 selectedIds={selectedTournamentIds}
                 setSelectedIds={setSelectedTournamentIds}
               />
-              
+
               {/* <section style={{ marginTop: '20px' }}>
                 <Tournaments />
               </section> */}
