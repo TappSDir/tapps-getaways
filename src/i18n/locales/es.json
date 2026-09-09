@@ -383,7 +383,7 @@
   "sched.PlayLevel": "Nivel de juego",
   "sched.sport": "Deporte",
   "sched.quantityGames": "#Juegos",
-  
+
   "sched.schedule": "Agenda",
   "sched.dates": "Fechas",
   "sched.date": "Fecha",
@@ -392,7 +392,7 @@
   "sched.activityTitle": "Título de la actividad",
   "sched.activity": "Actividad",
   "sched.fee": "Tarifa",
-  
+
   "sched.hr": "Hr",
   "sched.min": "Min",
   "sched.afterStart": "Debe ser posterior a la hora de inicio",
