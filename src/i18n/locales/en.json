@@ -429,7 +429,7 @@
   "tournaments.loading": "Loading tournaments...",
   "tournaments.error": "Error fetching tournaments.",
 
-
+  "ladders.error": "Error fetching ladders.",
   "ladders.addPrompt": "You can add these available Ladders™ sessions in this Getaway™",
   "ladders.header": "Ladders Tournament",
   "ladders.prompt": "Do you want to see available Racquets Ladders™ sessions for these dates?"
