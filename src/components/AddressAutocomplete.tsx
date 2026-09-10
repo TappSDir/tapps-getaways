@@ -155,6 +155,7 @@ export function AddressAutocomplete({
 
         // Si la librería de Google Geocoding no ha cargado aún, usamos un fallback numérico rápido
         if (!geocodingLib) {
+          console.log('la libreria no esta cargada aun')
           const fallbackAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
           onChangeRef.current({ address: fallbackAddress, lat, lng });
           if (inputRef.current) inputRef.current.value = fallbackAddress;

@@ -1,7 +1,7 @@
 import './App.css'
 import './index.css'
 import { useEffect } from 'react';
-import { APIProvider } from '@vis.gl/react-google-maps';
+import { APIProvider, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { ROUTES, ROUTE_PATTERNS } from './constants/routes';
 import { Role } from './constants/roles';
@@ -9,7 +9,7 @@ import { ColorModeProvider } from './theme/ColorModeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import GetawayDetail from './components/GetawayDetail';
-import CreateGetaway from './components/CreateGetaway';
+import {CreateGetaway} from './components/CreateGetaway';
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import ProtectedRoute from './components/ProtectedRoute';
@@ -36,7 +36,9 @@ import TestApi from './views/TestApi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-const GOOGLE_MAPS_LIBRARIES = ['places'];
+
+const GOOGLE_MAPS_LIBRARIES: ('places' | 'geocoding')[] = ['places', 'geocoding'];
+
 const DataViewWrapper: React.FC = () => {
   const { submissionData } = useFormData();
   if (!submissionData) {
@@ -56,11 +58,9 @@ const getCityAndCountry = (components: GeocoderAddressComponent[]) => {
   let country = "";
 
   components.forEach((comp) => {
-    //getter city(locality)
     if (comp.types.includes("locality")) {
       city = comp.long_name;
     }
-    //fallback: Google alternative getter
     else if (comp.types.includes("administrative_area_level_1") && !city) {
       city = comp.long_name;
     }
@@ -75,6 +75,7 @@ const getCityAndCountry = (components: GeocoderAddressComponent[]) => {
   return "";
 };
 
+
 const queryClient =  new QueryClient({
   defaultOptions:{
     queries: {
@@ -83,37 +84,68 @@ const queryClient =  new QueryClient({
     }
   }
 })
-
-function App() {
-  //console.log("key:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+const AppLocationInitializer: React.FC = () => {
+  // Aquí es donde vive el monitoreo del GPS
   useWatchLocation();
 
   const userLocation = useUserStore((state) => state.userLocation);
   const userAddress = useUserStore((state) => state.userAddress);
-  console.log("InituserLocation:", userLocation, "InituserAddress:", userAddress);
   const setUserAddress = useUserStore((state) => state.setUserAddress);
 
-  //Convert coords to {city, country} just once, to store in global state avoiding geocoding on every render
-  useEffect(() => {
-    const fetchAddress = async () => {
-      if (!userLocation || userAddress !== "") return;
-      console.log("userLocation:", userLocation, "userAddress:", userAddress);
-      try {
-        const res = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${userLocation.lat},${userLocation.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await res.json();
+  // Accedemos de forma instantánea a la librería global ya descargada
+  const geocodingLib = useMapsLibrary('geocoding');
 
-        if (data.status === "OK" && data.results && data.results[0]) {
-          const shortAddress = getCityAndCountry(data.results[0].address_components);
-          setUserAddress(shortAddress || data.results[0].formatted_address);
-        }
-      } catch (error) {
-        console.error("Error geocoding:", error);
+  useEffect(() => {
+    // Si no hay coordenadas, ya tenemos dirección, o Google no cargó, no hacemos nada
+    if (!userLocation || userAddress !== "" || !geocodingLib) return;
+
+    console.log("Geocodificando ubicación inicial de forma segura con el SDK...");
+    const geocoder = new geocodingLib.Geocoder();
+
+    geocoder.geocode({ location: { lat: userLocation.lat, lng: userLocation.lng } }, (results, status) => {
+      if (status === "OK" && results?.[0]) {
+        const shortAddress = getCityAndCountry(results[0].address_components);
+        setUserAddress(shortAddress || results[0].formatted_address);
+      } else {
+        console.error("Error en geocoding inicial:", status);
       }
-    };
-    fetchAddress();
-  }, [userLocation, userAddress, setUserAddress]);
+    });
+  }, [userLocation, userAddress, setUserAddress, geocodingLib]);
+
+  return null; // Este componente no renderiza HTML, solo gestiona datos de fondo
+};
+
+function App() {
+  // //console.log("key:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  // useWatchLocation();
+
+  // const userLocation = useUserStore((state) => state.userLocation);
+  // const userAddress = useUserStore((state) => state.userAddress);
+  // console.log("InituserLocation:", userLocation, "InituserAddress:", userAddress);
+  // const setUserAddress = useUserStore((state) => state.setUserAddress);
+
+  // //Convert coords to {city, country} just once, to store in global state avoiding geocoding on every render
+  // useEffect(() => {
+  //   const fetchAddress = async () => {
+  //     if (!userLocation || userAddress !== "") return;
+  //     console.log("userLocation:", userLocation, "userAddress:", userAddress);
+  //     try {
+  //       const res = await fetch(
+  //         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${userLocation.lat},${userLocation.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+  //       );
+  //       const data = await res.json();
+
+  //       if (data.status === "OK" && data.results && data.results[0]) {
+  //         const shortAddress = getCityAndCountry(data.results[0].address_components);
+  //         setUserAddress(shortAddress || data.results[0].formatted_address);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error geocoding:", error);
+  //     }
+  //   };
+  //   fetchAddress();
+  // }, [userLocation, userAddress, setUserAddress]);
+
   return (
     <ColorModeProvider>
       <QueryClientProvider client={queryClient}>
@@ -122,6 +154,7 @@ function App() {
             <ErrorBoundary>
               <AppConfigProvider>
                 <APIProvider apiKey={API_KEY} version="quarterly" libraries={GOOGLE_MAPS_LIBRARIES}>
+                  <AppLocationInitializer />
                   <Router>
                     <div className="mainContainer">
                     <Navbar/>
