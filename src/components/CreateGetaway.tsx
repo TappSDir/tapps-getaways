@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useForm, Controller, useFieldArray, SubmitHandler,
   useWatch
 } from 'react-hook-form';
@@ -34,6 +33,7 @@ import {
 
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useCreateGetaway } from '../hooks/useCreateGetaway';
+import { useEffect, useState } from 'react';
 // import { useScheduleValidation } from '../hooks/useScheduleValidation';
 
 const ALPHANUMERIC_I18N_REGEX : RegExp = /^[\p{L}0-9\s,._'";:()!/|&—’-]*$/u;
@@ -45,13 +45,13 @@ const sports = [
   { value: 'other', label: 'Other' }
 ];
 
-export default function CreateGetaway() {
+export const CreateGetaway =() => {
   const { t } = useTranslation();
   const { snackbar, showSnackbar, closeSnackbar } = useSnackbar();
   const { isLoading, submitGetaway } = useCreateGetaway(showSnackbar);
 
-  const [scheduleRows, setScheduleRows] = React.useState<ScheduleRow[]>([]);
-  const [scheduleError, setScheduleError] = React.useState<string | null>(null);
+  const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>([]);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   const { control, handleSubmit, formState: { errors } } = useForm<GetawayFormData>({
     defaultValues: {
@@ -69,14 +69,16 @@ export default function CreateGetaway() {
 
   // 1. Hook de consulta a la academia
   const { academyData, loading: loadingAcademy, fetchAcademy } = useGetAcademy();
-  const [selectedAcademyIds, setSelectedAcademyIds] = React.useState<string[]>([]);
+  console.log('//////')
+  console.log(academyData)
+  const [selectedAcademyIds, setSelectedAcademyIds] = useState<string[]>([]);
 
   // 2. Escuchar los inputs clave del formulario
   const watchedStartDate = useWatch({ control, name: 'startDate' });
   const watchedEndDate = useWatch({ control, name: 'endDate' });
   const watchedSport = useWatch({ control, name: 'sport' });
 
-  const [selectedTournamentIds, setSelectedTournamentIds] = React.useState<string[]>([]);
+  const [selectedTournamentIds, setSelectedTournamentIds] = useState<string[]>([]);
 
   const { fields: photoFields, append: appendPhoto, remove: removePhoto } = useFieldArray({
     control,
@@ -106,6 +108,8 @@ export default function CreateGetaway() {
   // });
 
   const onSubmit: SubmitHandler<GetawayFormData> = async (data) => {
+    console.log("prueba de datos")
+    console.log(data)
     if (!data.getawayAddress.lat || !data.getawayAddress.lng) {
       showSnackbar(t('create.selectValidLocation'), "warning");
       return;
@@ -149,13 +153,13 @@ export default function CreateGetaway() {
     );
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (scheduleRows.length > 0 && scheduleError) {
       setScheduleError(null);
     }
   }, [scheduleRows, scheduleError]);
   // Disparar la consulta al cambiar las fechas o el deporte
-  React.useEffect(() => {
+  useEffect(() => {
     if (watchedStartDate && watchedEndDate && watchedSport) {
       fetchAcademy({
         startDate: watchedStartDate,
