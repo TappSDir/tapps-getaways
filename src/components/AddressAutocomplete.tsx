@@ -89,6 +89,7 @@ export function AddressAutocomplete({
   labelColor,
   inputTextColor = BRAND.black,
 }: AddressAutocompleteProps) {
+
   const { t } = useTranslation();
   const [isLoadingGeo, setIsLoadingGeo] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,19 +97,23 @@ export function AddressAutocomplete({
 
   // useMapsLibrary hooks into the APIProvider from @vis.gl — no separate loader needed
   const placesLib = useMapsLibrary('places');
+  const geocodingLib = useMapsLibrary('geocoding')
 
   useEffect(() => { onChangeRef.current = onChange; });
 
   // Sync external value (e.g. GPS auto-fill) into the input
   const globalAddress = value?.address;
+
   useEffect(() => {
     if (inputRef.current && globalAddress) {
-      const inputAddress = `${globalAddress}, `;
-      inputRef.current.value = inputAddress;
+      // Evita duplicar la coma si la dirección ya viene formateada o limpia
+      const cleanAddress = globalAddress.endsWith(', ') ? globalAddress : `${globalAddress}`;
+      inputRef.current.value = cleanAddress;
+      
       const isDesktop = window.innerWidth > 768;
       if (isDesktop) {
         inputRef.current.focus();
-        const length = inputAddress.length;
+        const length = cleanAddress.length;
         inputRef.current.setSelectionRange(length, length);
       }
     }
@@ -147,31 +152,49 @@ export function AddressAutocomplete({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+        // Si la librería de Google Geocoding no ha cargado aún, usamos un fallback numérico rápido
+        if (!geocodingLib) {
+          const fallbackAddress = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+          onChangeRef.current({ address: fallbackAddress, lat, lng });
+          if (inputRef.current) inputRef.current.value = fallbackAddress;
+          setIsLoadingGeo(false);
+          return;
+        }
+
         try {
-          const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
-          );
-          const data = await res.json();
-          let address = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-          if (data.status === "OK" && data.results?.[0]) {
-            address = data.results[0].formatted_address;
-          }
-          onChangeRef.current({ address, lat, lng });
-          if (inputRef.current) inputRef.current.value = address;
+          // Instanciamos el codificador nativo de Google (No consume requests fetch manuales)
+          const geocoder = new geocodingLib.Geocoder();
+          
+          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            let address = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            
+            if (status === "OK" && results?.[0]) {
+              address = results[0].formatted_address;
+            }
+            
+            onChangeRef.current({ address, lat, lng });
+            if (inputRef.current) inputRef.current.value = address;
+            setIsLoadingGeo(false);
+          });
+
         } catch (err) {
           console.error("Geocoding error:", err);
           alert(t('address.geoFetchError'));
-        } finally {
           setIsLoadingGeo(false);
         }
       },
       (err) => {
         setIsLoadingGeo(false);
         alert(t('address.geoUnavailable') + " " + err.message);
+      },
+      {
+        enableHighAccuracy: true, // Usa GPS si está disponible
+        timeout: 8000,            // Máximo 8 segundos de espera para evitar bloqueos infinitos
+        maximumAge: 10000         // Si se ubicó hace menos de 10 segundos, reutiliza la posición
       }
-    );
-  };
+    )
+  }
 
   if (!placesLib) return <Typography>{t('address.loadingMaps')}</Typography>;
 
